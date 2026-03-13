@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>大洋乡档案站</title>
+    <!-- 引入 SheetJS 用于导入 Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #eef2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .app-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 20px 40px rgba(0,20,30,0.15);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(145deg,#1a3b4e,#0e2a38);
+            color: white;
+            padding: 1.2rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* 登录面板 */
+        .login-container {
+            padding: 2rem 2rem 3rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 500px;
+            background: #f9fcff;
+        }
+        .login-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 10px 25px rgba(0,30,40,0.1);
+            border: 1px solid #e2edf2;
+        }
+        .login-card h2 {
+            font-size: 1.9rem;
+            font-weight: 400;
+            color: #0e2a38;
+            margin-bottom: 1.5rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #1d4a5c;
+            margin-bottom: 0.3rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border: 1.5px solid #dae8ed;
+            border-radius: 60px;
+            font-size: 1rem;
+            background: white;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #1f7faa;
+            box-shadow: 0 0 0 3px rgba(31,127,170,0.15);
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .password-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #2b6279;
+        }
+        .password-options label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+        }
+        .password-options input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #1a5f7a;
+        }
+        .login-btn, .change-password-btn {
+            background: #1a5f7a;
+            color: white;
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 8px 14px rgba(21,80,105,0.25);
+            margin-top: 1rem;
+        }
+        .change-password-btn {
+            background: #4f7e96;
+            margin-top: 0.8rem;
+            font-size: 1rem;
+            box-shadow: none;
+        }
+        .login-btn:hover { background: #0f4b63; }
+        .change-password-btn:hover { background: #3a6075; }
+        .error-message {
+            color: #c3413b;
+            background: #fff3f0;
+            padding: 0.8rem 1rem;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            text-align: center;
+            border: 1px solid #fbc5c1;
+            display: none;
+        }
+        .error-message.show { display: block; }
+
+        /* 档案主面板 */
+        .archive-container {
+            display: none;
+            background: white;
+        }
+        .toolbar {
+            background: #ffffff;
+            padding: 1.2rem 2rem;
+            border-bottom: 1px solid #d4e2e9;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            justify-content: space-between;
+        }
+        .filter-search-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            flex: 3 1 600px;
+        }
+        .village-filter select {
+            padding: 0.6rem 1.5rem;
+            border: 1.5px solid #c8dbe5;
+            border-radius: 60px;
+            font-size: 0.95rem;
+            background: #f1f7fb;
+            cursor: pointer;
+            min-width: 130px;
+        }
+        .search-box {
+            flex: 2 1 300px;
+            display: flex;
+            align-items: center;
+            background: #f1f7fb;
+            border-radius: 60px;
+            padding: 0.2rem 0.2rem 0.2rem 1.5rem;
+            border: 1px solid #c8dbe5;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            min-width: 180px;
+        }
+        .search-box input:focus { outline: none; }
+        .search-box button {
+            background: #1a5f7a;
+            border: none;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .stats {
+            color: #1e4d62;
+            font-size: 0.95rem;
+            background: #e3f0f5;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .btn-primary {
+            background: #2b7a5e;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 4px 8px rgba(27,92,67,0.3);
+            white-space: nowrap;
+        }
+        .btn-primary:hover { background: #1e6249; }
+        .btn-secondary {
+            background: #3a6f8c;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-secondary:hover { background: #2b5670; }
+        .btn-danger {
+            background: #b13e3e;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-danger:hover { background: #922e2e; }
+        .btn-import {
+            background: #8a6e4b;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+        .btn-import:hover { background: #6f563a; }
+        .logout-btn {
+            background: rgba(26,59,78,0.1);
+            border: 1px solid #a0bccb;
+            color: #124257;
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .logout-btn:hover { background: #d4e4ed; }
+
+        /* 浮层通用样式 */
+        .form-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,20,30,0.6);
+            backdrop-filter: blur(3px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .form-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 2rem 2.5rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 30px 40px rgba(0,0,0,0.3);
+            animation: fadeIn 0.2s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .form-card h3 {
+            font-size: 1.8rem;
+            font-weight: 400;
+            color: #0e2a38;
+            margin-bottom: 0.3rem;
+        }
+        .form-card .hint {
+            color: #1f6d8f;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            border-left: 3px solid #3a9bcf;
+            padding-left: 1rem;
+        }
+        .form-field {
+            margin-bottom: 1.5rem;
+        }
+        .form-field label {
+            display: block;
+            font-weight: 500;
+            color: #1d4a5c;
+            margin-bottom: 0.3rem;
+        }
+        .form-field input, .form-field textarea, .form-field select {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border: 1.5px solid #dae8ed;
+            border-radius: 50px;
+            font-size: 1rem;
+            background: #fbfeff;
+        }
+        .form-field textarea {
+            border-radius: 20px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .form-field .preview {
+            margin-top: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .preview img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #bcd6e6;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .form-actions button {
+            flex: 1;
+            padding: 0.9rem;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-submit { background: #1a5f7a; color: white; }
+        .btn-submit:hover { background: #0d4b63; }
+        .btn-cancel { background: #e1edf5; color: #124257; }
+        .btn-cancel:hover { background: #cadee9; }
+
+        /* 档案列表 */
+        .list-container {
+            padding: 0 2rem 1rem;
+            background: #f7fbfe;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .archive-list {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            min-width: 700px;
+        }
+        .archive-list th {
+            text-align: left;
+            padding: 1rem 1rem;
+            background: #e1f0f7;
+            color: #124257;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 2px solid #b9d4e3;
+        }
+        .archive-list td {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #dae8ed;
+            vertical-align: middle;
+        }
+        .archive-list tr:last-child td { border-bottom: none; }
+        .archive-list tr:hover { background: #f0f9ff; }
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+        .checkbox-cell input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #1a5f7a;
+        }
+        .name-link {
+            color: #0a2e3b;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline dotted #5f9db2;
+        }
+        .name-link:hover { color: #1a5f7a; }
+        .action-cell { white-space: nowrap; }
+        .action-cell button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 30px;
+            transition: background 0.2s;
+        }
+        .edit-btn { color: #2b7a5e; }
+        .edit-btn:hover { background: rgba(43,122,94,0.1); }
+        .delete-single-btn { color: #b13e3e; }
+        .delete-single-btn:hover { background: rgba(177,62,62,0.1); }
+        .empty-message {
+            text-align: center;
+            padding: 3rem;
+            color: #507e94;
+            font-size: 1.2rem;
+            background: white;
+            border-radius: 20px;
+        }
+
+        /* 分页控件 */
+        .pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 1.2rem 2rem;
+            background: #f7fbfe;
+            border-top: 1px solid #d4e2e9;
+        }
+        .pagination button {
+            background: white;
+            border: 1px solid #c8dbe5;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #124257;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #1a5f7a;
+            color: white;
+            border-color: #1a5f7a;
+        }
+        .pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .pagination span {
+            font-size: 0.95rem;
+            color: #1e4d62;
+        }
+
+        /* 照片备注模态框 */
+        .photo-remark-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 2rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .modal-content img {
+            width: 100%;
+            max-height: 250px;
+            object-fit: contain;
+            border-radius: 20px;
+            background: #eaf3f9;
+            border: 2px solid #bcd6e6;
+        }
+        .modal-content textarea {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border: 1.5px solid #dae8ed;
+            border-radius: 20px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 100px;
+        }
+        .upload-date-display {
+            font-size: 0.9rem;
+            color: #1f6d8f;
+            background: #eaf3f9;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            margin-top: -0.5rem;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .modal-actions button {
+            padding: 0.6rem 1.5rem;
+            border: none;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .save-remark { background: #1a5f7a; color: white; }
+        .close-modal { background: #e1edf5; color: #124257; }
+
+        footer {
+            padding: 1rem 2rem;
+            background: #f0f7fc;
+            color: #2b6279;
+            font-size: 0.9rem;
+            border-top: 1px solid #cce0ea;
+        }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <div class="header">
+        <h1>🏛️ 大洋乡档案站</h1>
+    </div>
+
+    <!-- 登录面板 -->
+    <div id="loginPanel" class="login-container">
+        <div class="login-card">
+            <h2>🔐 档案员入口</h2>
+            <div class="input-group">
+                <label>👤 账户</label>
+                <input type="text" id="username" value="大洋乡组工办" placeholder="大洋乡组工办">
+            </div>
+            <div class="input-group">
+                <label>🔑 密码</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="请输入密码">
+                </div>
+                <div class="password-options">
+                    <label><input type="checkbox" id="showPassword"> 显示密码</label>
+                    <label><input type="checkbox" id="rememberPassword"> 记住密码</label>
+                </div>
+            </div>
+            <button class="login-btn" id="loginBtn">进入档案站</button>
+            <button class="change-password-btn" id="showChangePwdBtn">⚙️ 修改密码</button>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- 修改密码浮层 -->
+    <div id="changePwdOverlay" class="form-overlay">
+        <div class="form-card">
+            <h3>🔒 修改密码</h3>
+            <div class="hint">请输入旧密码，然后设置新密码</div>
+            <div class="form-field">
+                <label>旧密码</label>
+                <input type="password" id="oldPassword" placeholder="当前密码">
+            </div>
+            <div class="form-field">
+                <label>新密码</label>
+                <input type="password" id="newPassword" placeholder="新密码">
+            </div>
+            <div class="form-field">
+                <label>确认新密码</label>
+                <input type="password" id="confirmPassword" placeholder="再次输入">
+            </div>
+            <div class="form-actions">
+                <button class="btn-submit" id="submitChangePwd">确认修改</button>
+                <button class="btn-cancel" id="cancelChangePwd">取消</button>
+            </div>
+            <div id="pwdError" class="error-message" style="margin-top:1rem;"></div>
+        </div>
+    </div>
+
+    <!-- 档案主面板 -->
+    <div id="archivePanel" class="archive-container">
+        <div class="toolbar">
+            <div class="filter-search-area">
+                <div class="village-filter">
+                    <select id="villageFilter"><option value="">所有村别</option></select>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="编号、姓名...">
+                    <button id="clearSearchBtn">重置</button>
+                </div>
+                <div class="stats" id="resultStats">共 <span id="recordCount">0</span> 份</div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn-import" id="importBtn">📤 导入</button>
+                <button class="btn-secondary" id="exportSelectedBtn">📥 导出选中</button>
+                <button class="btn-danger" id="deleteSelectedBtn">🗑️ 删除选中</button>
+                <button class="btn-primary" id="showAddFormBtn">➕ 上传档案</button>
+                <button class="logout-btn" id="logoutBtn">🚪 退出</button>
+            </div>
+        </div>
+
+        <div id="listContainer" class="list-container"><!-- 动态表格 --></div>
+
+        <div class="pagination" id="pagination">
+            <button id="prevPage" disabled>◀ 上一页</button>
+            <span id="pageInfo">第 1 页 / 共 1 页</span>
+            <button id="nextPage" disabled>下一页 ▶</button>
+        </div>
+        <footer>© 大洋乡档案站</footer>
+    </div>
+
+    <!-- 新增档案浮层 -->
+    <div id="addFormOverlay" class="form-overlay">
+        <div class="form-card">
+            <h3>📤 上传新档案</h3>
+            <div class="hint">编号自动复用空缺；照片可选，备注可选</div>
+            <div class="form-field">
+                <label>村别</label>
+                <select id="addVillage"></select>
+            </div>
+            <div class="form-field">
+                <label>姓名</label>
+                <input type="text" id="addName" placeholder="例如：张三">
+            </div>
+            <div class="form-field">
+                <label>照片 (可拍照或从相册选择)</label>
+                <input type="file" id="addPhoto" accept="image/*" capture="camera">
+                <div class="preview" id="photoPreview">
+                    <img src="https://ui-avatars.com/api/?name=预览&size=60&background=random" alt="预览">
+                </div>
+            </div>
+            <div class="form-field">
+                <label>备注 (可选)</label>
+                <textarea id="addRemarks" placeholder="可填写职务、备注信息..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn-submit" id="submitAddBtn">保存档案</button>
+                <button class="btn-cancel" id="cancelAddBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑档案浮层 -->
+    <div id="editFormOverlay" class="form-overlay">
+        <div class="form-card">
+            <h3>✏️ 编辑档案</h3>
+            <div class="hint">修改信息，村别改变将重新生成编号</div>
+            <div class="form-field">
+                <label>村别</label>
+                <select id="editVillage"></select>
+            </div>
+            <div class="form-field">
+                <label>姓名</label>
+                <input type="text" id="editName" placeholder="姓名">
+            </div>
+            <div class="form-field">
+                <label>照片 (可拍照或从相册选择)</label>
+                <input type="file" id="editPhoto" accept="image/*" capture="camera">
+                <div class="preview" id="editPhotoPreview">
+                    <img src="" alt="当前照片">
+                </div>
+            </div>
+            <div class="form-field">
+                <label>备注</label>
+                <textarea id="editRemarks" placeholder="备注信息..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn-submit" id="submitEditBtn">更新档案</button>
+                <button class="btn-cancel" id="cancelEditBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片+备注模态框 -->
+    <div id="photoRemarkModal" class="photo-remark-modal">
+        <div class="modal-content">
+            <img id="modalPhoto" src="" alt="档案照片">
+            <textarea id="modalRemarks" placeholder="此处可编辑备注..."></textarea>
+            <div class="upload-date-display" id="modalUploadDate">上传日期：</div>
+            <div class="modal-actions">
+                <button class="save-remark" id="saveRemarkBtn">保存备注</button>
+                <button class="close-modal" id="closeModalBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的导入文件输入 -->
+    <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+</div>
+
+<script>
+(function(){
+    // ---------- 密码存储 ----------
+    const DEFAULT_PASSWORD = "ZG3067021";
+    function getStoredPassword() { return localStorage.getItem('dayang_password') || DEFAULT_PASSWORD; }
+    function setStoredPassword(newPwd) { localStorage.setItem('dayang_password', newPwd); }
+
+    // 记住密码相关
+    const REMEMBER_FLAG_KEY = 'dayang_remember';
+    const SAVED_PASSWORD_KEY = 'dayang_saved_password';
+
+    // 村别拼音映射
+    const VILLAGE_PINYIN_MAP = {
+        "坝头村":"BT","琼峰村":"QF","瑞云村":"RY","可山村":"KES",
+        "莲峰村":"LF","崇兴村":"CX","车口村":"CK","杏山村":"XS",
+        "瑶山村":"YS","南岭村":"NL","孝池村":"XC","坂洋村":"BY",
+        "大洋村":"DY","满长村":"MC","院埔村":"YP","昆山村":"KUN",
+        "兔洋村":"TY","霞洋村":"XY","其他":"QT"
+    };
+    const VILLAGE_LIST = [
+        "坝头村","琼峰村","瑞云村","可山村","莲峰村","崇兴村","车口村","杏山村",
+        "瑶山村","南岭村","孝池村","坂洋村","大洋村","满长村","院埔村","昆山村",
+        "兔洋村","霞洋村","其他"
+    ];
+
+    // 种子档案 (含 uploadDate)
+    const SEED_ARCHIVES = [
+        { village: "大洋村", fileNumber: "DY001", name: "张大山", remarks: "村支书", uploadDate: "2023-01-15" },
+        { village: "大洋村", fileNumber: "DY002", name: "李翠花", remarks: "妇女主任", uploadDate: "2023-02-20" },
+        { village: "石井村", fileNumber: "SJ001", name: "王明", remarks: "", uploadDate: "2023-03-10" },
+        { village: "石井村", fileNumber: "SJ002", name: "刘强", remarks: "治保主任", uploadDate: "2023-04-05" },
+        { village: "溪头村", fileNumber: "XT005", name: "赵晓东", remarks: "会计", uploadDate: "2023-05-12" },
+        { village: "溪头村", fileNumber: "XT008", name: "周淑芬", remarks: "", uploadDate: "2023-06-18" },
+        { village: "前洋村", fileNumber: "QY010", name: "陈丽", remarks: "妇联", uploadDate: "2023-07-22" },
+        { village: "前洋村", fileNumber: "QY011", name: "许文强", remarks: "民兵营长", uploadDate: "2023-08-30" },
+        { village: "后洋村", fileNumber: "HY021", name: "林建国", remarks: "", uploadDate: "2023-09-14" },
+        { village: "后洋村", fileNumber: "HY022", name: "林小芳", remarks: "共青团委", uploadDate: "2023-10-01" },
+        { village: "西岸村", fileNumber: "XA001", name: "吴明", remarks: "村长", uploadDate: "2023-11-11" },
+        { village: "东山村", fileNumber: "DS003", name: "郑晓龙", remarks: "", uploadDate: "2023-12-24" },
+        { village: "南浦村", fileNumber: "NP007", name: "王晓燕", remarks: "计生专干", uploadDate: "2024-01-03" },
+        { village: "北岐村", fileNumber: "BQ012", name: "陈文龙", remarks: "", uploadDate: "2024-02-14" },
+        { village: "海滨村", fileNumber: "HB009", name: "李海英", remarks: "网格员", uploadDate: "2024-03-19" },
+        { village: "山前街道", fileNumber: "SQ101", name: "王德福", remarks: "", uploadDate: "2024-04-25" },
+        { village: "可山村", fileNumber: "KES001", name: "可山代表", remarks: "可山负责人", uploadDate: "2024-05-30" },
+        { village: "昆山村", fileNumber: "KUN001", name: "昆山代表", remarks: "昆山负责人", uploadDate: "2024-06-06" }
+    ];
+
+    // ---------- 全局变量 ----------
+    let fullArchives = [];
+    let currentPage = 1;
+    const PAGE_SIZE = 20;
+    let currentEditId = null;
+    let currentModalId = null;
+
+    // ---------- DOM 元素 ----------
+    const loginPanel = document.getElementById('loginPanel');
+    const archivePanel = document.getElementById('archivePanel');
+    const usernameInp = document.getElementById('username');
+    const passwordInp = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const villageFilter = document.getElementById('villageFilter');
+    const listContainer = document.getElementById('listContainer');
+    const recordCountSpan = document.getElementById('recordCount');
+    const showAddFormBtn = document.getElementById('showAddFormBtn');
+    const addFormOverlay = document.getElementById('addFormOverlay');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+    const submitAddBtn = document.getElementById('submitAddBtn');
+    const addVillage = document.getElementById('addVillage');
+    const addName = document.getElementById('addName');
+    const addPhoto = document.getElementById('addPhoto');
+    const addRemarks = document.getElementById('addRemarks');
+    const photoPreview = document.querySelector('#photoPreview img');
+    const exportSelectedBtn = document.getElementById('exportSelectedBtn');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFileInput = document.getElementById('importFileInput');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageInfoSpan = document.getElementById('pageInfo');
+    const editFormOverlay = document.getElementById('editFormOverlay');
+    const editVillage = document.getElementById('editVillage');
+    const editName = document.getElementById('editName');
+    const editPhoto = document.getElementById('editPhoto');
+    const editPhotoPreview = document.getElementById('editPhotoPreview').querySelector('img');
+    const editRemarks = document.getElementById('editRemarks');
+    const submitEditBtn = document.getElementById('submitEditBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const showChangePwdBtn = document.getElementById('showChangePwdBtn');
+    const changePwdOverlay = document.getElementById('changePwdOverlay');
+    const oldPassword = document.getElementById('oldPassword');
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const submitChangePwd = document.getElementById('submitChangePwd');
+    const cancelChangePwd = document.getElementById('cancelChangePwd');
+    const pwdError = document.getElementById('pwdError');
+    const photoModal = document.getElementById('photoRemarkModal');
+    const modalPhoto = document.getElementById('modalPhoto');
+    const modalRemarks = document.getElementById('modalRemarks');
+    const modalUploadDate = document.getElementById('modalUploadDate');
+    const saveRemarkBtn = document.getElementById('saveRemarkBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const showPasswordCheck = document.getElementById('showPassword');
+    const rememberPasswordCheck = document.getElementById('rememberPassword');
+
+    // ---------- 记住密码 ----------
+    function loadRememberedPassword() {
+        const remember = localStorage.getItem(REMEMBER_FLAG_KEY) === 'true';
+        if (remember) {
+            const saved = localStorage.getItem(SAVED_PASSWORD_KEY);
+            if (saved) { passwordInp.value = saved; rememberPasswordCheck.checked = true; }
+            else { passwordInp.value = ''; rememberPasswordCheck.checked = false; }
+        } else { passwordInp.value = ''; rememberPasswordCheck.checked = false; }
+    }
+    function saveRememberedPassword(remember, pwd) {
+        if (remember) { localStorage.setItem(REMEMBER_FLAG_KEY,'true'); localStorage.setItem(SAVED_PASSWORD_KEY,pwd); }
+        else { localStorage.removeItem(REMEMBER_FLAG_KEY); localStorage.removeItem(SAVED_PASSWORD_KEY); }
+    }
+    if (showPasswordCheck) {
+        showPasswordCheck.addEventListener('change', function() { passwordInp.type = this.checked ? 'text' : 'password'; });
+    }
+
+    // ---------- 工具函数 ----------
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2,9); }
+    function generatePhotoUrl(name) { return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=200&background=random&color=fff&bold=true&length=2`; }
+
+    function getUsedNumbersForVillage(village) {
+        const prefix = VILLAGE_PINYIN_MAP[village] || 'QT';
+        const nums = new Set();
+        fullArchives.forEach(a => {
+            if (a.village === village && a.fileNumber.startsWith(prefix+'-')) {
+                const n = parseInt(a.fileNumber.substring(prefix.length+1),10);
+                if (!isNaN(n)) nums.add(n);
+            }
+        });
+        return nums;
+    }
+    function generateNextAvailableNumber(village) {
+        const prefix = VILLAGE_PINYIN_MAP[village] || 'QT';
+        const used = getUsedNumbersForVillage(village);
+        let c = 1;
+        while (used.has(c)) c++;
+        return `${prefix}-${c}`;
+    }
+
+    function buildFullArchivesFromSeed() {
+        return SEED_ARCHIVES.map(item => ({
+            id: generateId(),
+            village: item.village,
+            fileNumber: item.fileNumber,
+            name: item.name,
+            photoUrl: generatePhotoUrl(item.name),
+            remarks: item.remarks || '',
+            uploadDate: item.uploadDate || new Date().toISOString().slice(0,10)
+        }));
+    }
+    function loadArchivesFromStorage() {
+        const stored = localStorage.getItem('dayangArchives_v7');
+        if (stored) {
+            try { fullArchives = JSON.parse(stored); }
+            catch(e) { fullArchives = buildFullArchivesFromSeed(); }
+        } else { fullArchives = buildFullArchivesFromSeed(); saveArchivesToStorage(); }
+    }
+    function saveArchivesToStorage() {
+        try { localStorage.setItem('dayangArchives_v7', JSON.stringify(fullArchives)); }
+        catch(e) { alert('存储失败，请清理浏览器空间后重试'); }
+    }
+
+    function populateVillageFilters() {
+        if (addVillage) addVillage.innerHTML = VILLAGE_LIST.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (editVillage) editVillage.innerHTML = VILLAGE_LIST.map(v => `<option value="${v}">${v}</option>`).join('');
+        if (villageFilter) villageFilter.innerHTML = '<option value="">所有村别</option>' + VILLAGE_LIST.map(v => `<option value="${v}">${v}</option>`).join('');
+    }
+
+    function getFilteredArchives() {
+        const v = villageFilter.value;
+        const t = searchInput.value.trim().toLowerCase();
+        return fullArchives.filter(a => {
+            if (v && a.village !== v) return false;
+            if (t) return a.fileNumber.toLowerCase().includes(t) || a.name.toLowerCase().includes(t) || a.village.toLowerCase().includes(t);
+            return true;
+        });
+    }
+
+    function renderList() {
+        const filtered = getFilteredArchives();
+        recordCountSpan.textContent = filtered.length;
+        const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+        const start = (currentPage-1)*PAGE_SIZE;
+        const pageData = filtered.slice(start, start+PAGE_SIZE);
+
+        if (!pageData.length) {
+            listContainer.innerHTML = `<div class="empty-message">📭 没有找到匹配的档案</div>`;
+            pageInfoSpan.textContent = `第 0 页 / 共 0 页`;
+            prevPageBtn.disabled = true; nextPageBtn.disabled = true;
+            return;
+        }
+
+        let html = `<table class="archive-list"><thead><tr><th class="checkbox-cell"><input type="checkbox" id="selectAllCheckbox"></th><th>村别</th><th>编号</th><th>姓名</th><th>操作</th></tr></thead><tbody>`;
+        pageData.forEach(arc => {
+            html += `<tr data-id="${arc.id}"><td class="checkbox-cell"><input type="checkbox" class="select-checkbox" value="${arc.id}"></td><td>${escapeHtml(arc.village)}</td><td>${escapeHtml(arc.fileNumber)}</td><td><span class="name-link" data-id="${arc.id}">${escapeHtml(arc.name)}</span></td><td class="action-cell"><button class="edit-btn" onclick="event.stopPropagation(); openEditModal('${arc.id}')">✏️</button><button class="delete-single-btn" onclick="event.stopPropagation(); deleteArchive('${arc.id}')">🗑️</button></td></tr>`;
+        });
+        html += `</tbody></table>`;
+        listContainer.innerHTML = html;
+
+        const selectAll = document.getElementById('selectAllCheckbox');
+        if (selectAll) {
+            selectAll.addEventListener('change', e => {
+                document.querySelectorAll('.select-checkbox').forEach(cb => cb.checked = e.target.checked);
+            });
+        }
+        document.querySelectorAll('.name-link').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const arc = fullArchives.find(a => a.id === id);
+                if (arc) {
+                    currentModalId = id;
+                    modalPhoto.src = arc.photoUrl;
+                    modalRemarks.value = arc.remarks || '';
+                    modalUploadDate.textContent = `上传日期：${arc.uploadDate || '未知'}`;
+                    photoModal.style.display = 'flex';
+                }
+            });
+        });
+        pageInfoSpan.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages;
+    }
+
+    function escapeHtml(str) { return String(str).replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[m]); }
+    function applyFilterAndRender() { currentPage = 1; renderList(); }
+    function goToPage(delta) {
+        const totalPages = Math.ceil(getFilteredArchives().length / PAGE_SIZE) || 1;
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= totalPages) { currentPage = newPage; renderList(); }
+    }
+
+    // ---------- 删除 ----------
+    window.deleteArchive = function(id) {
+        if (confirm('确定删除？')) { fullArchives = fullArchives.filter(a => a.id !== id); saveArchivesToStorage(); applyFilterAndRender(); }
+    };
+    function deleteSelected() {
+        const checked = document.querySelectorAll('.select-checkbox:checked');
+        if (!checked.length) return alert('请勾选档案');
+        if (confirm(`删除 ${checked.length} 份档案？`)) {
+            const ids = Array.from(checked).map(cb => cb.value);
+            fullArchives = fullArchives.filter(a => !ids.includes(a.id));
+            saveArchivesToStorage(); applyFilterAndRender();
+        }
+    }
+
+    // ---------- 导出 ----------
+    function exportSelected() {
+        const checked = document.querySelectorAll('.select-checkbox:checked');
+        if (!checked.length) return alert('请勾选档案');
+        const ids = Array.from(checked).map(cb => cb.value);
+        const selected = fullArchives.filter(a => ids.includes(a.id));
+        let csv = "\uFEFF村别,编号,姓名,备注\n";
+        selected.forEach(a => csv += `${a.village},${a.fileNumber},${a.name},"${(a.remarks||'').replace(/"/g,'""')}"\n`);
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = '大洋乡档案_选中.xls';
+        a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ---------- 导入 ----------
+    importBtn.addEventListener('click', ()=> importFileInput.click());
+    importFileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(loadEvent) {
+            try {
+                const data = new Uint8Array(loadEvent.target.result);
+                const wb = XLSX.read(data, {type:'array'});
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+                if (rows.length < 2) return alert('无数据');
+                const headers = rows[0].map(h=>String(h).trim());
+                const vIdx = headers.findIndex(h=>h.includes('村别')||h.includes('村'));
+                const nIdx = headers.findIndex(h=>h.includes('姓名')||h.includes('名字'));
+                const rIdx = headers.findIndex(h=>h.includes('备注')||h.includes('说明'));
+                if (vIdx===-1 || nIdx===-1) return alert('必须包含“村别”和“姓名”列');
+                const today = new Date().toISOString().slice(0,10);
+                let added = 0;
+                for (let i=1; i<rows.length; i++) {
+                    const row = rows[i];
+                    if (!row) continue;
+                    const village = row[vIdx] ? String(row[vIdx]).trim() : '';
+                    const name = row[nIdx] ? String(row[nIdx]).trim() : '';
+                    if (!village || !name) continue;
+                    if (!VILLAGE_LIST.includes(village)) continue;
+                    const remarks = (rIdx!==-1 && row[rIdx]) ? String(row[rIdx]).trim() : '';
+                    const newNumber = generateNextAvailableNumber(village);
+                    fullArchives.push({ id: generateId(), village, name, fileNumber: newNumber, photoUrl: generatePhotoUrl(name), remarks, uploadDate: today });
+                    added++;
+                }
+                if (added) { saveArchivesToStorage(); applyFilterAndRender(); alert(`导入 ${added} 条`); }
+                else alert('未导入任何档案');
+            } catch(err) { alert('导入失败：'+err.message); }
+            importFileInput.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // ---------- 新增档案 ----------
+    function showAddForm() { populateVillageFilters(); addName.value=''; addPhoto.value=''; addRemarks.value=''; photoPreview.src="https://ui-avatars.com/api/?name=预览&size=60&background=random"; addFormOverlay.style.display='flex'; }
+    function hideAddForm() { addFormOverlay.style.display='none'; }
+    function handleAddSubmit() {
+        const village = addVillage.value;
+        const name = addName.value.trim();
+        const userRemarks = addRemarks.value.trim();
+        if (!village || !name) return alert('请填写村别和姓名');
+        const newNumber = generateNextAvailableNumber(village);
+        const file = addPhoto.files[0];
+        const today = new Date().toISOString().slice(0,10);
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => addNewArchive(village, name, newNumber, e.target.result, userRemarks, today);
+            reader.onerror = () => addNewArchive(village, name, newNumber, generatePhotoUrl(name), userRemarks, today);
+            reader.readAsDataURL(file);
+        } else { addNewArchive(village, name, newNumber, generatePhotoUrl(name), userRemarks, today); }
+    }
+    function addNewArchive(village, name, number, photoUrl, remarks, uploadDate) {
+        fullArchives.push({ id: generateId(), village, fileNumber: number, name, photoUrl, remarks, uploadDate });
+        saveArchivesToStorage(); hideAddForm(); applyFilterAndRender();
+    }
+
+    // ---------- 编辑档案 ----------
+    window.openEditModal = function(id) {
+        const arc = fullArchives.find(a=>a.id===id);
+        if (!arc) return;
+        currentEditId = id;
+        populateVillageFilters();
+        editVillage.value = arc.village;
+        editName.value = arc.name;
+        editRemarks.value = arc.remarks || '';
+        editPhotoPreview.src = arc.photoUrl;
+        editPhoto.value = '';
+        editFormOverlay.style.display = 'flex';
+    };
+    function hideEditForm() { editFormOverlay.style.display='none'; currentEditId=null; }
+    function handleEditSubmit() {
+        if (!currentEditId) return;
+        const idx = fullArchives.findIndex(a=>a.id===currentEditId);
+        if (idx===-1) return;
+        const old = fullArchives[idx];
+        const newVillage = editVillage.value;
+        const newName = editName.value.trim();
+        const newRemarks = editRemarks.value.trim();
+        if (!newVillage || !newName) return alert('请填写村别和姓名');
+        let newNumber = old.fileNumber;
+        if (newVillage !== old.village) newNumber = generateNextAvailableNumber(newVillage);
+        const file = editPhoto.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => updateArchive(idx, newVillage, newName, newNumber, e.target.result, newRemarks, old.uploadDate);
+            reader.onerror = () => updateArchive(idx, newVillage, newName, newNumber, old.photoUrl, newRemarks, old.uploadDate);
+            reader.readAsDataURL(file);
+        } else { updateArchive(idx, newVillage, newName, newNumber, old.photoUrl, newRemarks, old.uploadDate); }
+    }
+    function updateArchive(idx, village, name, number, photoUrl, remarks, uploadDate) {
+        fullArchives[idx] = { ...fullArchives[idx], village, name, fileNumber: number, photoUrl, remarks, uploadDate };
+        saveArchivesToStorage(); hideEditForm(); applyFilterAndRender();
+    }
+
+    // ---------- 保存备注 ----------
+    function saveRemarks() {
+        if (!currentModalId) return;
+        const idx = fullArchives.findIndex(a=>a.id===currentModalId);
+        if (idx!==-1) {
+            fullArchives[idx].remarks = modalRemarks.value.trim();
+            saveArchivesToStorage();
+            alert('备注已保存');
+        }
+    }
+
+    // ---------- 修改密码 ----------
+    function openChangePwd() { changePwdOverlay.style.display='flex'; oldPassword.value=''; newPassword.value=''; confirmPassword.value=''; pwdError.classList.remove('show'); }
+    function closeChangePwd() { changePwdOverlay.style.display='none'; }
+    function handleChangePwd() {
+        const old = oldPassword.value;
+        const np = newPassword.value;
+        const cf = confirmPassword.value;
+        const cur = getStoredPassword();
+        if (old !== cur) { pwdError.textContent='旧密码错误'; pwdError.classList.add('show'); return; }
+        if (np.length<4) { pwdError.textContent='新密码至少4位'; pwdError.classList.add('show'); return; }
+        if (np !== cf) { pwdError.textContent='两次新密码不一致'; pwdError.classList.add('show'); return; }
+        setStoredPassword(np);
+        alert('密码修改成功！');
+        closeChangePwd();
+    }
+
+    // ---------- 登录/登出 ----------
+    function showLoginPanel() { loginPanel.style.display='flex'; archivePanel.style.display='none'; loginError.classList.remove('show'); loadRememberedPassword(); }
+    function showArchivePanel() { loginPanel.style.display='none'; archivePanel.style.display='block'; loadArchivesFromStorage(); populateVillageFilters(); searchInput.value=''; villageFilter.value=''; currentPage=1; renderList(); }
+    function handleLogin() {
+        const user = usernameInp.value.trim();
+        const pwd = passwordInp.value;
+        if (user === "大洋乡组工办" && pwd === getStoredPassword()) {
+            saveRememberedPassword(rememberPasswordCheck.checked, pwd);
+            sessionStorage.setItem('auth','true');
+            showArchivePanel();
+        } else { loginError.textContent='❌ 账户或密码错误'; loginError.classList.add('show'); }
+    }
+    function handleLogout() { sessionStorage.removeItem('auth'); showLoginPanel(); }
+    function initAuth() { loadRememberedPassword(); if (sessionStorage.getItem('auth')==='true') showArchivePanel(); else showLoginPanel(); }
+
+    // ---------- 事件绑定 ----------
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    searchInput.addEventListener('input', applyFilterAndRender);
+    clearSearchBtn.addEventListener('click', ()=>{ searchInput.value=''; villageFilter.value=''; applyFilterAndRender(); });
+    villageFilter.addEventListener('change', applyFilterAndRender);
+    showAddFormBtn.addEventListener('click', showAddForm);
+    cancelAddBtn.addEventListener('click', hideAddForm);
+    submitAddBtn.addEventListener('click', handleAddSubmit);
+    addFormOverlay.addEventListener('click', e => { if (e.target === addFormOverlay) hideAddForm(); });
+    cancelEditBtn.addEventListener('click', hideEditForm);
+    submitEditBtn.addEventListener('click', handleEditSubmit);
+    editFormOverlay.addEventListener('click', e => { if (e.target === editFormOverlay) hideEditForm(); });
+    editPhoto.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) { const r = new FileReader(); r.onload = ev => editPhotoPreview.src = ev.target.result; r.readAsDataURL(file); }
+    });
+    exportSelectedBtn.addEventListener('click', exportSelected);
+    deleteSelectedBtn.addEventListener('click', deleteSelected);
+    prevPageBtn.addEventListener('click', ()=>goToPage(-1));
+    nextPageBtn.addEventListener('click', ()=>goToPage(1));
+    addPhoto.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) { const r = new FileReader(); r.onload = ev => photoPreview.src = ev.target.result; r.readAsDataURL(file); }
+        else photoPreview.src = "https://ui-avatars.com/api/?name=预览&size=60&background=random";
+    });
+    showChangePwdBtn.addEventListener('click', openChangePwd);
+    cancelChangePwd.addEventListener('click', closeChangePwd);
+    submitChangePwd.addEventListener('click', handleChangePwd);
+    changePwdOverlay.addEventListener('click', e => { if (e.target === changePwdOverlay) closeChangePwd(); });
+    closeModalBtn.addEventListener('click', ()=>{ photoModal.style.display='none'; currentModalId=null; });
+    saveRemarkBtn.addEventListener('click', saveRemarks);
+    photoModal.addEventListener('click', e => { if (e.target === photoModal) { photoModal.style.display='none'; currentModalId=null; } });
+    passwordInp.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+    usernameInp.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
+
+    window.addEventListener('load', initAuth);
+})();
+</script>
+</body>
+</html>
